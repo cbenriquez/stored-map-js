@@ -6,43 +6,88 @@ import { StoredMap } from "./stored-map.js"
  */
 export class StoredMapConverter {
     
-    public parsers = new Map<string, (args: any[]) => any>()
-    public stringifiers = new Map<string, (value: any) => string[] | false>()
+    public deserializer: {[deserializerName: string]: (args: any[]) => any} = {}
+    public serializer: {[serializerName: string]: (value: any) => any[] | undefined} = {}
 
     constructor() {
-        // Construct default parsers and stringifiers.
+        // Implement serializer and deserializer for Infinity.
+        this.deserializer['Infinity'] = () => {
+            return Infinity
+        }
+        this.serializer['Infinity'] = (value) => {
+            if (typeof value == 'number' && value == Infinity) {
+                return []
+            }
+        }
 
-        // Implement "Infinity()" <=> Infinity.
-        this.parsers.set('Infinity', () => Infinity)
-        this.stringifiers.set('Infinity', (value) => typeof value == 'number' && value == Infinity && [])
+        // Implement serializer and deserializer for -Infinity.
+        this.deserializer['-Infinity'] = () => {
+            return -Infinity
+        }
+        this.serializer['Infinity'] = (value) => {
+            if (typeof value == 'number' && value == -Infinity) {
+                return []
+            }
+        }
 
-        // Implement "-Infinity()" <=> Infinity.
-        this.parsers.set('-Infinity', () => -Infinity)
-        this.stringifiers.set('-Infinity', (value) => typeof value == 'number' && value == -Infinity && [])
+        // Implement serializer and deserializer for NaN.
+        this.deserializer['NaN'] = () => {
+            return NaN
+        }
+        this.serializer['NaN'] = (value) => {
+            if (typeof value == 'number' && isNaN(value)) {
+                return []
+            }
+        }
 
-        // Implement "NaN()" <=> NaN.
-        this.parsers.set('NaN', () => NaN)
-        this.stringifiers.set('NaN', (value) => typeof value == 'number' && isNaN(value) && [])
+        // Implement serializer and deserializer for undefined.
+        this.deserializer['undefined'] = () => {
+            return undefined
+        }
+        this.serializer['undefined'] = (value) => {
+            if (value == undefined) {
+                return []
+            }
+        }
 
-        // Implement "undefined()" <=> undefined.
-        this.parsers.set('undefined', () => undefined)
-        this.stringifiers.set('undefined', (value) => value == undefined && [])
+        // Implement serializer and deserializer for BigInt.
+        this.deserializer['BigInt'] = (args) => {
+            return BigInt(args[0])
+        }
+        this.serializer['BigInt'] = (value) => {
+            if (typeof value == 'bigint') return []
+        }
 
-        // Implement "BigInt()" <=> BigInt.
-        this.parsers.set('BigInt', (args: string[]) => BigInt(args[0]))
-        this.stringifiers.set('BigInt', (value) => typeof value == 'bigint' && [])
+        // Implement serializer and deserializer for Date.
+        this.deserializer['Date'] = (args) => {
+            return new Date(args[0])
+        }
+        this.serializer['Date'] = (value) => {
+            if (value instanceof Date) {
+                return [value.getTime()]
+            }
+        }
 
-        // Implement "Date()" <=> Date.
-        this.parsers.set('Date', (args: string[]) => new Date(Number(args[0])))
-        this.stringifiers.set('Date', (value) => value instanceof Date && [value.getTime().toString()])
+        // // Implement serializer and deserializer for StoredMap.
+        this.deserializer['StoredMap'] = (args) => {
+            return new StoredMap(args[0])
+        }
+        this.serializer['StoredMap'] = (value) => {
+            if (value instanceof StoredMap) {
+                return [value.path]
+            }
+        }
 
-        // Implement "StoredMap()" <=> StoredMap.
-        this.parsers.set('StoredMap', (args: string[]) => new StoredMap(args[0]))
-        this.stringifiers.set('StoredMap', (value) => value instanceof StoredMap && [value.path])
+        // Implement serializer and deserializer for Map.
+        this.deserializer['Map'] = (args) => {
+            return new Map(args[0])
+        }
 
-        // Implement "Map()" <=> Map.
-        this.parsers.set('Map', (args: any[]) => new Map(args[0]))
-        this.stringifiers.set('Map', (value) => value instanceof Map && [this.stringify(Array.from(value))])
+        this.serializer['Map'] = (value) => {
+            if (value instanceof Map) {
+                return [Array.from(value)]
+            }
+        }
 
     }
 
@@ -50,60 +95,52 @@ export class StoredMapConverter {
         // Convert the Javascript Object Notation string into an object.
         let jsonObject = JSON.parse(json)
 
-        // Handle the JSON object if it is of type "string".
+        // Handle if the JSON object is of type "string".
         if (typeof jsonObject == 'string') {
-            // Get the name of the parser in the string
-            let parserName = jsonObject.slice(0, jsonObject.indexOf('('))
+            // Get the name of the deserializer in the string
+            let deserializerName = jsonObject.slice(0, jsonObject.indexOf('('))
 
-            // Try to get the function using the parser name.
-            let runParser = this.parsers.get(parserName)
+            // Try to get the function using the deserializer name.
+            let deserialize = this.deserializer[deserializerName]
 
-            // Handle the string if a parser function exists.
-            if (runParser != undefined) {
-                // Get the argument section of the string e.g. "Date(<this>)".
-                let parserArgumentSection = jsonObject.slice(
+            // Handle if a deserializer function exists.
+            if (deserialize != undefined) {
+                // Get the arguments of the string e.g. "Date(<this>)".
+                let deserializerArgumentsText = jsonObject.slice(
                     jsonObject.indexOf('(') + 1,
                     jsonObject.lastIndexOf(')')
                 )
 
-                // Keep removing backslashes from the argument section until the start of the argument section has none.
-                while (parserArgumentSection.startsWith('\\')) {
-                    parserArgumentSection = parserArgumentSection.replaceAll('\\"', '"')
-                }
+                // Declare a variable for the arguments.
+                let deserializerArguments
 
-                // If exists, remove quotation marks between the start and end of the argument section
-                if (parserArgumentSection.startsWith('"') && parserArgumentSection.endsWith('"')) {
-                    parserArgumentSection = parserArgumentSection.slice(1, parserArgumentSection.length - 1)
-                }
-                
-                // Parser parameters will be passed to the parser.
-                let parserParameters: string[] = []
+                // Handle while the arguments are undefined.
+                while (deserializerArguments == undefined) {
+                    // Try to parse the text for the arguments.
+                    try {
+                        deserializerArguments = this.parse<any[]>('[' + deserializerArgumentsText + ']')
+                    } catch(e) {
+                        // Handle if a syntax error occured and the message states there is an unexpected token.
+                        if (e instanceof SyntaxError && e.message.includes('Unexpected token')) {
+                            // Remove one backslash from every quotation mark.
+                            deserializerArgumentsText = deserializerArgumentsText.replaceAll('\\"', '"')
 
-                try {
-                    // Try to parse the argument section into an array.
-                    parserParameters = this.parse(`[${parserArgumentSection}]`)
+                        } 
 
-                } catch(e) {
-                    // It may fail if the resultant string from the earlier removal of backslashes caused a SyntaxError.
-                    if (e instanceof SyntaxError) {
-                        // If true, then add an extra backslash to every quotation mark in the argument section.
-                        parserArgumentSection = parserArgumentSection.replaceAll('\\"', '\\\\"')
-                        
-                        // Then parse it again.
-                        parserParameters = this.parse(`[${parserArgumentSection}]`)
+                        // Otherwise, throw the error.
+                        else throw e
+
                     }
 
-                } finally {
-                    // Pass the parameters to the parser and re-assign the JSON object.
-                    jsonObject = runParser(parserParameters)
-
                 }
-
+                
+                // Pass them to the deserializer.
+                jsonObject = deserialize(deserializerArguments)
             }
 
         }
 
-        // Handle the JSON object if it is of type "object".
+        // Handle if the JSON object is of type "object".
         else if (typeof jsonObject == 'object') {
             // Parse and re-assign every value of they object.
             for (let key of Object.keys(jsonObject)) {
@@ -132,18 +169,18 @@ export class StoredMapConverter {
         // Store a copy of the value for modification.
         let modificationValue = value
 
-        // Loop every stringifier and pass the modification value onto them so it may return a string array.
-        for (let [stringifierName, stringify] of this.stringifiers) {
-            // Pass the modification value to the stringifier.
-            let stringArray = stringify(modificationValue)
+        // Loop every serializer and pass the modification value onto them so it may return a string array.
+        for (let [serializerName, serialize] of Object.entries(this.serializer)) {
+            // Pass the modification value to the serializer.
+            let stringArray = serialize(modificationValue)
 
             // If arguments are returned, then re-assign the modification value and break the loop.
             if (stringArray) {
                 // Format the arguments into a string.
-                let argumentsText = stringArray.map((stringArray) => `"${stringArray}"`).join(',')
+                let argumentsText = stringArray.map((string) => this.stringify(string)).join(',')
 
                 // Re-assign the modification value.
-                modificationValue = `${stringifierName}(${argumentsText})`
+                modificationValue = `${serializerName}(${argumentsText})`
                 
                 // Break the loop.
                 break
@@ -152,7 +189,7 @@ export class StoredMapConverter {
 
         }
 
-        // Handle the modification value if it is of type "object".
+        // Handle if the modification value is of type "object".
         if (typeof modificationValue == 'object') {
             // Clone the object.
             modificationValue = Object.assign({}, [value])[0]

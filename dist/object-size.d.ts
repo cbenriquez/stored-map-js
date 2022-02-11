@@ -1,1 +1,1 @@
-export declare function getObjectSize(object: any[]): number;
+export declare function getObjectSize(object: any): number;

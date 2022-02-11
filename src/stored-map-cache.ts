@@ -13,7 +13,7 @@ export class StoredMapCacher {
     }
 
     public find(storeKey: string) {
-        // MEM: Save the length of the cache storage.
+        // Save the length of the cache storage.
         let cacheStorageLength = this.cacheStorage.length
 
         // Iterate through the every index of the cache storage and search for the triple with the store key.
@@ -27,7 +27,7 @@ export class StoredMapCacher {
         // Get the sum of the memory usage and the memory size.
         let sumTotalMemoryUsage = this.memoryUsage + memorySize
 
-         // Handle it while the sum exceeds the memory limit.
+         // Handle while the sum exceeds the memory limit.
         while (sumTotalMemoryUsage > this.memoryLimit) {
             // Remove a triple from the cache storage.
             let removedTriple = this.cacheStorage.shift()

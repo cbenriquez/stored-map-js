@@ -10,17 +10,17 @@ export function isValidStoreKey(storeKey) {
     for (let index = 0; index < storeKey.length; index++) {
         // Get the character code at the index.
         let charCode = storeKey.charCodeAt(index);
-        // If the character code is less than 32, return an erorr.
+        // If the character code is less than 32, return an Error.
         if (charCode < 32)
             return Error(`Cannot contain a character code less than 32.`);
         // If store key is all periods is true and the character is not a period, set it to false.
         if (storekeyIsAllPeriods && charCode != 46)
             storekeyIsAllPeriods = false;
     }
-    // If the store key is all periods, return an error.
+    // If the store key is all periods, return an Error.
     if (storekeyIsAllPeriods)
         return Error('Cannot contain only periods');
-    // If the array of DOS names includes the store key, return an errror.
+    // If the array of DOS names includes the store key, return an Error.
     if (dosNames.includes(storeKey))
         return Error('Cannot be a DOS name');
     return true;

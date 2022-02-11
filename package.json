@@ -6,7 +6,7 @@
   "types": "dist/stored-map.d.ts",
   "type": "module",
   "scripts": {
-    "development": "tsc --watch",
+    "test": "rm -r -f dist/* && tsc --build && node dist/test",
     "production": "rm -r -f dist/* && tsc --build"
   },
   "author": {

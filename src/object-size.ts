@@ -14,32 +14,36 @@ if (architecture == 'x64') {
     multipliers.string = 8
 }
 
-export function getObjectSize(object: any[]) {
+export function getObjectSize(object: any) {
+    // Declare a variable to count the size of the object.
     let bytes = 0
-    // Iterate through every element of the object and count their size.
-    for (let element of object) {
-        // If the element is a boolean, then count 4 bytes.
-        if (typeof element == 'boolean') {
-            bytes += 4
-        }
 
-        // If the element is a string, then count every character multiplied by the value of the string multiplier.
-        else if (typeof element == 'string') {
-            bytes += element.length * multipliers.string
-        }
-
-        // If the element is a number, then count 8 bytes.
-        else if (typeof element == 'number') {
-            bytes += 8
-        }
-
-        // If the elemet is a object, then invoke this function and count the result.
-        else if (typeof element == 'object') {
-            bytes += getObjectSize(element)
-        }
+    // If the object is a boolean, then count 4 bytes.
+    if (typeof object == 'boolean') {
+        bytes = 4
     }
 
-    // Return the size  of the object in bytes.
+    // If the object is a string, then count every character multiplied by the value of the string multiplier.
+    else if (typeof object == 'string') {
+        bytes = object.length * multipliers.string
+    }
+
+    // If the object is a number, then count 8 bytes.
+    else if (typeof object == 'number') {
+        bytes = 8
+    }
+
+    // If the object is a object, then invoke this function and count the result.
+    else if (typeof object == 'object') {
+
+        for (let [key, value] of Object.entries(object)) {
+            bytes += getObjectSize(key)
+            bytes += getObjectSize(value)
+        }
+        
+    }
+
+    // Return the size of the object.
     return bytes
 
 }

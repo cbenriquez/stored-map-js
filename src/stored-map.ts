@@ -1,8 +1,7 @@
 import { randomUUID } from "crypto"
-import { lstat, mkdir, readdir, readFile, stat, Stats, statSync, unlink, writeFile } from "fs"
+import { mkdir, readdir, readFile, stat, unlink, writeFile } from "fs"
 import { join } from "path"
 import validate from "uuid-validate"
-import { getObjectSize } from "./object-size.js"
 import { StoredMapCacher } from "./stored-map-cache.js"
 import { StoredMapConverter } from "./stored-map-converter.js"
 
@@ -62,7 +61,7 @@ export class StoredMap {
         // Try to get the last modified time of the file.
         let fileLastModified = await new Promise<number | undefined>((resolve) => {
             stat(filePath, (err, stats) => {
-                if (err) resolve(undefined)
+                if (err != undefined) resolve(undefined)
                 else resolve (stats.mtimeMs)
             })
         })
@@ -93,6 +92,7 @@ export class StoredMap {
                 } else {
                     value = cacheValue
                 }
+                
             }
 
         }
@@ -139,12 +139,12 @@ export class StoredMap {
         // Handle it if the key exceeds the 250 characters limit.
         if (storeKey.length > 250) {
             // Get all key-UUID pairs. If it doesn't exist, return undefined.
-            let keyUuidPairs = await this.get<Map<string, string>>('key-uuid-pairs')
-            if (!keyUuidPairs) return undefined
+            let keyUuidPairs = await this.get<{[storeKey: string]: string}>('key-uuid-pairs')
+            if (keyUuidPairs == undefined) return undefined
 
             // Get the UUID of the store key. If it doesn't exist, return undefined.
-            let uuid = keyUuidPairs.get(storeKey)
-            if (!uuid) return undefined
+            let uuid = keyUuidPairs[storeKey]
+            if (uuid == undefined) return undefined
 
             // Re-assign the store key with its UUID.
             storeKey = uuid
@@ -167,10 +167,10 @@ export class StoredMap {
         // If the key exceeds the 250 characters limit, get the UUID of the store key.
         if (storeKey.length > 250) {
             // Get all key-UUID pairs in a Map. If it doesn't exist, create the map.
-            let keyUuidPairs = await this.get<Map<string, string>>('key-uuid-pairs') || new Map<string, string>()
+            let keyUuidPairs = await this.get<{[storeKey: string]: string}>('key-uuid-pairs') || {}
 
             // Try to get the UUID of the store key.
-            let uuid = keyUuidPairs.get(storeKey)
+            let uuid = keyUuidPairs[storeKey]
 
             // Handle it if the UUID does not exist.
             if (uuid == undefined) {
@@ -178,7 +178,7 @@ export class StoredMap {
                 uuid = randomUUID()
 
                 // Add the store key and UUID to the pairs
-                keyUuidPairs.set(storeKey, uuid)
+                keyUuidPairs[storeKey] = uuid
 
                 // Save the pairs.
                 await this.set('key-uuid-pairs', keyUuidPairs)
@@ -196,7 +196,7 @@ export class StoredMap {
         // Await a promise to get the file's last modified time.
         let lastModified = await new Promise<number | undefined>((resolve) => {
             stat(this.path, (err, stats) => {
-                if (err) resolve(undefined)
+                if (err != undefined) resolve(undefined)
                 else resolve(stats.mtimeMs)
             })
         })
@@ -205,7 +205,7 @@ export class StoredMap {
         if (lastModified == undefined) {
             await new Promise<void>((resolve, reject) => {
                 mkdir(this.path, { 'recursive': true }, (err) => {
-                    if (err) reject(err)
+                    if (err != undefined) reject(err)
                     else resolve()
                 })
             })
@@ -215,7 +215,7 @@ export class StoredMap {
         await new Promise<void>((resolve, reject) => {
             // Write to the file path a stringified value in UTF-8 format. Throw an error on write error or resolve.
             writeFile(filePath, this.converter.stringify(value), 'utf-8', (err) => {
-                if (err) return reject(err)
+                if (err != undefined) reject(err)
                 else resolve()
             })
         })
@@ -225,17 +225,17 @@ export class StoredMap {
             // If file statistics are defined, get its last modified time. Otherwise, await a promise to retrieve it.
             lastModified = lastModified || await new Promise<number | undefined>((resolve) => {
                 stat(filePath, (err, stats) => {
-                    if (err) resolve(undefined)
+                    if (err != undefined) resolve(undefined)
                     else resolve(stats.mtimeMs)
                 })
             })
             
             // If it failed, return.
-            if (!lastModified) return
+            if (lastModified == undefined) return
 
             // If a cache of this key is found, delete it.
             let cacheIndex = this.cacher.find(storeKey)
-            if (cacheIndex) this.cacher.delete(cacheIndex)
+            if (cacheIndex != undefined) this.cacher.delete(cacheIndex)
 
             // Push the store key, value, and last modified time into the cache storage.
             this.cacher.push(storeKey, value, lastModified)
@@ -256,12 +256,12 @@ export class StoredMap {
         let uuid: string | undefined
         if (storeKey.length > 255) {
             // Get all key-UUID pairs. If it doesn't exist, return false.
-            keyUuidPairs = await this.get<Map<string, string>>('key-uuid-pairs')
-            if (!keyUuidPairs) return false
+            keyUuidPairs = await this.get<{[storeKey: string]: string}>('key-uuid-pairs')
+            if (keyUuidPairs == undefined) return false
             
             // Get the UUID of the key. If it doesn't exist, return false.
-            uuid = keyUuidPairs.get(storeKey)
-            if (!uuid) return false
+            uuid = keyUuidPairs[storeKey]
+            if (uuid == undefined) return false
 
         }
 
@@ -279,15 +279,15 @@ export class StoredMap {
         if (deleted) {
             // If the cache of this key is found, delete it.
             let cacheIndex = this.cacher.find(storeKey)
-            if (cacheIndex) this.cacher.delete(cacheIndex)
+            if (cacheIndex != undefined) this.cacher.delete(cacheIndex)
 
             // Handle it if key UUID pairs is defined.
-            if (keyUuidPairs) {
+            if (keyUuidPairs != undefined) {
                 // Delete the store key and UUID.
-                keyUuidPairs.delete(storeKey)
+                delete keyUuidPairs[storeKey]
 
-                // Save the pairs if it still has contents..
-                if (keyUuidPairs.size > 0) {
+                // Save the pairs if it still has contents.
+                if (Object.keys(keyUuidPairs).length > 0) {
                     await this.set('key-uuid-pairs', keyUuidPairs)
                 }
 
@@ -371,6 +371,7 @@ export class StoredMap {
                 for (let [key, uuid] of keyUuidPairs) {
                     // If the store key and UUID is the same, yield the key.
                     if (storeKey == uuid) yield key
+
                 }
             }
 
@@ -378,6 +379,7 @@ export class StoredMap {
             else if (!isValidUuid) {
                 // Only convert if the store key isn't essential to Store Map.
                 if (storeKey != 'key-uuid-pairs') yield this.converter.convertStoreKeyToKey(storeKey)
+                
             }
 
         }
