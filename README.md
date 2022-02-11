@@ -1,7 +1,6 @@
 # StoredMap
-An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk.
 
-The map object is on its alpha phase. It is not yet tested on a large scale and should not be used for production by the time being. The methods are subject to change.
+An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk.
 
 ## Installation
 
@@ -53,6 +52,6 @@ The list may be updated in the future, but you may inspect the converter object'
 ### Caching
 The map object utilizes caching to enhance the value retrieval process.
 
-The object is assigned a cache memory limit. The default setting is 100,000,000 bytes, or 100 megabytes, and can be be specified in the constructor or altered in the properties.
+The object is assigned a cache memory limit. The default setting is 100,000,000 bytes, or 100 megabytes, and can be specified in the constructor or altered in the properties.
 
 When a value is retrieved or assigned to a key, it is saved into the cache. If the memory limit is exceeded, it will free the first cached entries to make space.
