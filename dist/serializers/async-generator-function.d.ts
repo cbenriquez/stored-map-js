@@ -1,6 +1,7 @@
+import { Serializer } from "../stored-map-converter.js";
 export declare let AsyncGeneratorFunction: AsyncGeneratorFunction;
 export declare type AsyncGeneratorFunctionSerialized = [...string[], string];
-export declare namespace AsyncGeneratorFunctionSerializer {
-    function serialize(value: any): AsyncGeneratorFunctionSerialized | undefined;
-    function deserialize(args: AsyncGeneratorFunctionSerialized): AsyncGenerator<unknown, any, unknown>;
+export declare class AsyncGeneratorFunctionSerializer implements Serializer {
+    serialize(value: any): AsyncGeneratorFunctionSerialized | undefined;
+    deserialize(args: AsyncGeneratorFunctionSerialized): AsyncGenerator<unknown, any, unknown>;
 }

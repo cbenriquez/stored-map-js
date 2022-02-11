@@ -1,15 +1,12 @@
-export var InfinitySerializer;
-(function (InfinitySerializer) {
-    function serialize(value) {
+export class InfinitySerializer {
+    serialize(value) {
         // If the value is an Infinity, return an empty array.
         if (typeof value == 'number' && value == Infinity) {
             return [];
         }
     }
-    InfinitySerializer.serialize = serialize;
-    function deserialize() {
+    deserialize() {
         // Return infinity.
         return Infinity;
     }
-    InfinitySerializer.deserialize = deserialize;
-})(InfinitySerializer || (InfinitySerializer = {}));
+}

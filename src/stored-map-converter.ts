@@ -13,66 +13,57 @@ import { StoredMapSerializer } from "./serializers/stored-map.js"
 import { UndefinedSerializer } from "./serializers/undefined.js"
 import { isValidStoreKey } from "./store-key-validator.js"
 
+export interface Serializer {
+    serialize: (value: any) => any | undefined
+    deserialize: (args: any) => any
+}
+
 /**
  * A class that provides the functions for StoredMap objects to convert values to and from the Javascript Object Notation format.
  */
 export class StoredMapConverter {
-    
-    public deserializer: {[deserializerName: string]: (args: any) => any} = {}
-    public serializer: {[serializerName: string]: (value: any) => any | undefined} = {}
+
+    public serializers: {[serializerName: string]: Serializer} = {}
 
     constructor() {
         // Implement serializer and deserializer for Infinity.
-        this.serializer['Infinity'] = InfinitySerializer.serialize
-        this.deserializer['Infinity'] = InfinitySerializer.deserialize
+        this.serializers['Infinity'] = new InfinitySerializer()
         
         // Implement serializer and deserializer for -Infinity.
-        this.serializer['-Infinity'] = NegativeInfinitySerializer.serialize
-        this.deserializer['-Infinity'] = NegativeInfinitySerializer.deserialize
+        this.serializers['-Infinity'] = new NegativeInfinitySerializer()
 
         // Implement serializer and deserializer for NaN.
-        this.serializer['NaN'] = NotANumberSerializer.serialize
-        this.deserializer['NaN'] = NotANumberSerializer.deserialize
+        this.serializers['NaN'] = new NotANumberSerializer()
 
         // Implement serializer and deserializer for undefined.
-        this.serializer['undefined'] = UndefinedSerializer.serialize
-        this.deserializer['undefined'] = UndefinedSerializer.deserialize
+        this.serializers['undefined'] = new UndefinedSerializer()
 
         // Implement serializer and deserializer for BigInt.
-        this.serializer['BigInt'] = BigIntSerializer.serialize
-        this.deserializer['BigInt'] = BigIntSerializer.deserialize
+        this.serializers['BigInt'] = new BigIntSerializer()
 
         // Implement serializer and deserializer for Date.
-        this.serializer['Date'] = DateSerializer.serialize
-        this.deserializer['Date'] = DateSerializer.deserialize
+        this.serializers['Date'] = new DateSerializer()
 
         // // Implement serializer and deserializer for StoredMap.
-        this.serializer['StoredMap'] = StoredMapSerializer.serialize
-        this.deserializer['StoredMap'] = StoredMapSerializer.deserialize
+        this.serializers['StoredMap'] = new StoredMapSerializer()
 
         // Implement serializer and deserializer for Map.
-        this.serializer['Map'] = MapSerializer.serializer
-        this.deserializer['Map'] = MapSerializer.deserialize
+        this.serializers['Map'] = new MapSerializer()
 
         // Implement serializer and deserializer for Set.
-        this.serializer['Set'] = SetSerializer.serialize
-        this.deserializer['Set'] = SetSerializer.deserialize
+        this.serializers['Set'] = new SetSerializer()
 
         // Implement serializer and deserializer for Async Function.
-        this.serializer['AsyncFunction'] = AsyncFunctionSerializer.serialize
-        this.deserializer['AsyncFunction'] = AsyncFunctionSerializer.deserialize
+        this.serializers['AsyncFunction'] = new AsyncFunctionSerializer()
 
         // Implement serializer and deserializer for Async Generator Function.
-        this.serializer['AsyncGeneratorFunction'] = AsyncGeneratorFunctionSerializer.serialize
-        this.deserializer['AsyncGeneratorFunction'] = AsyncGeneratorFunctionSerializer.deserialize
+        this.serializers['AsyncGeneratorFunction'] = new AsyncGeneratorFunctionSerializer()
 
         // Implement serializer and deserializer for Generator Function.
-        this.serializer['GeneratorFunction'] = GeneratorFunctionSerializer.serialize
-        this.deserializer['GeneratorFunction'] = GeneratorFunctionSerializer.deserialize
+        this.serializers['GeneratorFunction'] = new GeneratorFunctionSerializer()
 
         // Implement serializer and deserializer for Function.
-        this.serializer['Function'] = FunctionSerializer.serialize
-        this.deserializer['Function'] = FunctionSerializer.deserialize
+        this.serializers['Function'] = new FunctionSerializer()
 
     }
 
@@ -86,10 +77,10 @@ export class StoredMapConverter {
             let deserializerName = jsonObject.slice(0, jsonObject.indexOf('('))
 
             // Try to get the function using the deserializer name.
-            let deserialize = this.deserializer[deserializerName]
+            let serializer = this.serializers[deserializerName]
 
             // Handle if a deserializer function exists.
-            if (deserialize != undefined) {
+            if (serializer != undefined) {
                 // Get the arguments of the string e.g. "Date(<this>)".
                 let deserializerArgumentsText = jsonObject.slice(
                     jsonObject.indexOf('(') + 1,
@@ -125,7 +116,7 @@ export class StoredMapConverter {
                 }
 
                 // Pass them to the deserializer.
-                jsonObject = deserialize(deserializerArguments)
+                jsonObject = serializer.deserialize(deserializerArguments)
 
             }
 
@@ -161,9 +152,9 @@ export class StoredMapConverter {
         let modificationValue = value
 
         // Loop every serializer and pass the modification value onto them so it may return a string array.
-        for (let [serializerName, serialize] of Object.entries(this.serializer)) {
+        for (let [serializerName, serializer] of Object.entries(this.serializers)) {
             // Pass the modification value to the serializer.
-            let stringArray = serialize(modificationValue)
+            let stringArray = serializer.serialize(modificationValue)
 
             // If arguments are returned, then re-assign the modification value and break the loop.
             if (stringArray) {

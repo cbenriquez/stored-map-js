@@ -1,5 +1,6 @@
+import { Serializer } from "../stored-map-converter";
 export declare type SetSerialized = [any[]];
-export declare namespace SetSerializer {
-    function serialize(value: any): SetSerialized | undefined;
-    function deserialize(args: SetSerialized): Set<any>;
+export declare class SetSerializer implements Serializer {
+    serialize(value: any): SetSerialized | undefined;
+    deserialize(args: SetSerialized): Set<any>;
 }

@@ -1,4 +1,5 @@
-export declare namespace UndefinedSerializer {
-    function serialize(value: any): never[] | undefined;
-    function deserialize(): undefined;
+import { Serializer } from "../stored-map-converter";
+export declare class UndefinedSerializer implements Serializer {
+    serialize(value: any): never[] | undefined;
+    deserialize(): undefined;
 }

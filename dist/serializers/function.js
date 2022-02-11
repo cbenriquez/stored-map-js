@@ -16,18 +16,15 @@ export function serializeFunction(object) {
     // Return the parameters and the code in an array.
     return [...parameters, code];
 }
-export var FunctionSerializer;
-(function (FunctionSerializer) {
-    function serialize(value) {
+export class FunctionSerializer {
+    serialize(value) {
         // If the value is an instance of Function, return the serialized function body.
         if (value instanceof Function) {
             return serializeFunction(value);
         }
     }
-    FunctionSerializer.serialize = serialize;
-    function deserialize(args) {
+    deserialize(args) {
         // Construct a generator function from the arguments.
         return new Function(...args);
     }
-    FunctionSerializer.deserialize = deserialize;
-})(FunctionSerializer || (FunctionSerializer = {}));
+}

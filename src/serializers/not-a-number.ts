@@ -1,6 +1,8 @@
-export namespace NotANumberSerializer {
+import { Serializer } from "../stored-map-converter"
 
-    export function serialize(value: any) {
+export class NotANumberSerializer implements Serializer {
+
+    public serialize(value: any) {
         // If the value's type is number and it's not a number, return an empty array.
         if (typeof value == 'number' && isNaN(value)) {
             return []
@@ -8,7 +10,7 @@ export namespace NotANumberSerializer {
 
     }
 
-    export function deserialize() {
+    public deserialize() {
         // Return a not a number value.
         return NaN
 

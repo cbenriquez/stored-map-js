@@ -1,13 +1,15 @@
-export namespace NegativeInfinitySerializer {
+import { Serializer } from "../stored-map-converter"
 
-    export function serialize(value: any) {
+export class NegativeInfinitySerializer implements Serializer {
+
+    public serialize(value: any) {
         // If the value is a negative infinity, return an empty array.
         if (typeof value == 'number' && value == -Infinity) {
             return []
         }
     }
 
-    export function deserialize() {
+    public deserialize() {
         return -Infinity
     }
 

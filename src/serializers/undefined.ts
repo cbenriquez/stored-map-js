@@ -1,6 +1,8 @@
-export namespace UndefinedSerializer {
+import { Serializer } from "../stored-map-converter"
 
-    export function serialize(value: any) {
+export class UndefinedSerializer implements Serializer {
+
+    public serialize(value: any) {
         // If the value is an undefined, return an empty array.
         if (value == undefined) {
             return []
@@ -8,9 +10,10 @@ export namespace UndefinedSerializer {
 
     }
 
-    export function deserialize() {
+    public deserialize() {
         // Return an undefined value.
         return undefined
         
     }
+
 }
