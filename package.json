@@ -1,0 +1,24 @@
+{
+  "name": "stored-map",
+  "version": "1.0.0",
+  "description": "An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk.",
+  "main": "dist/stored-map.js",
+  "type": "module",
+  "scripts": {
+    "development": "tsc --watch",
+    "production": "rm -r -f dist/* && tsc --build"
+  },
+  "author": {
+    "name": "Claude Bryan Enriquez",
+    "email": "claudebryanenriquez@gmail.com"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.15",
+    "@types/uuid-validate": "^0.0.1",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "uuid-validate": "^0.0.3"
+  }
+}
