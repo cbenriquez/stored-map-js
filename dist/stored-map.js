@@ -102,7 +102,7 @@ export class StoredMap {
     async get(key) {
         // Convert key to store key.
         let storeKey = this.converter.convertKeyToStoreKey(key);
-        // Handle it if the key exceeds the 250 characters limit.
+        // Handle if the key exceeds the 250 characters limit.
         if (storeKey.length > 250) {
             // Get all key-UUID pairs. If it doesn't exist, return undefined.
             let keyUuidPairs = await this.get('key-uuid-pairs');

@@ -1,93 +1,78 @@
+import { AsyncFunctionSerializer } from "./serializers/async-function.js"
+import { AsyncGeneratorFunctionSerializer } from "./serializers/async-generator-function.js"
+import { BigIntSerializer } from "./serializers/big-int.js"
+import { DateSerializer } from "./serializers/date.js"
+import { FunctionSerializer } from "./serializers/function.js"
+import { GeneratorFunctionSerializer } from "./serializers/generator-function.js"
+import { InfinitySerializer } from "./serializers/infinity.js"
+import { MapSerializer } from "./serializers/map.js"
+import { NegativeInfinitySerializer } from "./serializers/negative-infinity.js"
+import { NotANumberSerializer } from "./serializers/not-a-number.js"
+import { SetSerializer } from "./serializers/set.js"
+import { StoredMapSerializer } from "./serializers/stored-map.js"
+import { UndefinedSerializer } from "./serializers/undefined.js"
 import { isValidStoreKey } from "./store-key-validator.js"
-import { StoredMap } from "./stored-map.js"
 
 /**
  * A class that provides the functions for StoredMap objects to convert values to and from the Javascript Object Notation format.
  */
 export class StoredMapConverter {
     
-    public deserializer: {[deserializerName: string]: (args: any[]) => any} = {}
-    public serializer: {[serializerName: string]: (value: any) => any[] | undefined} = {}
+    public deserializer: {[deserializerName: string]: (args: any) => any} = {}
+    public serializer: {[serializerName: string]: (value: any) => any | undefined} = {}
 
     constructor() {
         // Implement serializer and deserializer for Infinity.
-        this.deserializer['Infinity'] = () => {
-            return Infinity
-        }
-        this.serializer['Infinity'] = (value) => {
-            if (typeof value == 'number' && value == Infinity) {
-                return []
-            }
-        }
-
+        this.serializer['Infinity'] = InfinitySerializer.serialize
+        this.deserializer['Infinity'] = InfinitySerializer.deserialize
+        
         // Implement serializer and deserializer for -Infinity.
-        this.deserializer['-Infinity'] = () => {
-            return -Infinity
-        }
-        this.serializer['Infinity'] = (value) => {
-            if (typeof value == 'number' && value == -Infinity) {
-                return []
-            }
-        }
+        this.serializer['-Infinity'] = NegativeInfinitySerializer.serialize
+        this.deserializer['-Infinity'] = NegativeInfinitySerializer.deserialize
 
         // Implement serializer and deserializer for NaN.
-        this.deserializer['NaN'] = () => {
-            return NaN
-        }
-        this.serializer['NaN'] = (value) => {
-            if (typeof value == 'number' && isNaN(value)) {
-                return []
-            }
-        }
+        this.serializer['NaN'] = NotANumberSerializer.serialize
+        this.deserializer['NaN'] = NotANumberSerializer.deserialize
 
         // Implement serializer and deserializer for undefined.
-        this.deserializer['undefined'] = () => {
-            return undefined
-        }
-        this.serializer['undefined'] = (value) => {
-            if (value == undefined) {
-                return []
-            }
-        }
+        this.serializer['undefined'] = UndefinedSerializer.serialize
+        this.deserializer['undefined'] = UndefinedSerializer.deserialize
 
         // Implement serializer and deserializer for BigInt.
-        this.deserializer['BigInt'] = (args) => {
-            return BigInt(args[0])
-        }
-        this.serializer['BigInt'] = (value) => {
-            if (typeof value == 'bigint') return []
-        }
+        this.serializer['BigInt'] = BigIntSerializer.serialize
+        this.deserializer['BigInt'] = BigIntSerializer.deserialize
 
         // Implement serializer and deserializer for Date.
-        this.deserializer['Date'] = (args) => {
-            return new Date(args[0])
-        }
-        this.serializer['Date'] = (value) => {
-            if (value instanceof Date) {
-                return [value.getTime()]
-            }
-        }
+        this.serializer['Date'] = DateSerializer.serialize
+        this.deserializer['Date'] = DateSerializer.deserialize
 
         // // Implement serializer and deserializer for StoredMap.
-        this.deserializer['StoredMap'] = (args) => {
-            return new StoredMap(args[0])
-        }
-        this.serializer['StoredMap'] = (value) => {
-            if (value instanceof StoredMap) {
-                return [value.path]
-            }
-        }
+        this.serializer['StoredMap'] = StoredMapSerializer.serialize
+        this.deserializer['StoredMap'] = StoredMapSerializer.deserialize
 
         // Implement serializer and deserializer for Map.
-        this.deserializer['Map'] = (args) => {
-            return new Map(args[0])
-        }
+        this.serializer['Map'] = MapSerializer.serializer
+        this.deserializer['Map'] = MapSerializer.deserialize
 
-        this.serializer['Map'] = (value) => {
-            if (value instanceof Map) {
-                return [Array.from(value)]
-            }
-        }
+        // Implement serializer and deserializer for Set.
+        this.serializer['Set'] = SetSerializer.serialize
+        this.deserializer['Set'] = SetSerializer.deserialize
+
+        // Implement serializer and deserializer for Async Function.
+        this.serializer['AsyncFunction'] = AsyncFunctionSerializer.serialize
+        this.deserializer['AsyncFunction'] = AsyncFunctionSerializer.deserialize
+
+        // Implement serializer and deserializer for Async Generator Function.
+        this.serializer['AsyncGeneratorFunction'] = AsyncGeneratorFunctionSerializer.serialize
+        this.deserializer['AsyncGeneratorFunction'] = AsyncGeneratorFunctionSerializer.deserialize
+
+        // Implement serializer and deserializer for Generator Function.
+        this.serializer['GeneratorFunction'] = GeneratorFunctionSerializer.serialize
+        this.deserializer['GeneratorFunction'] = GeneratorFunctionSerializer.deserialize
+
+        // Implement serializer and deserializer for Function.
+        this.serializer['Function'] = FunctionSerializer.serialize
+        this.deserializer['Function'] = FunctionSerializer.deserialize
 
     }
 
@@ -120,8 +105,13 @@ export class StoredMapConverter {
                     try {
                         deserializerArguments = this.parse<any[]>('[' + deserializerArgumentsText + ']')
                     } catch(e) {
-                        // Handle if a syntax error occured and the message states there is an unexpected token.
-                        if (e instanceof SyntaxError && e.message.includes('Unexpected token')) {
+                        // Handle if a unexpected token error occured
+                        // and the arguments includes a quotation mark with a backslash. 
+                        if (
+                            e instanceof SyntaxError
+                            && e.message.includes('Unexpected token')
+                            && deserializerArgumentsText.includes('\\"')
+                        ) {
                             // Remove one backslash from every quotation mark.
                             deserializerArgumentsText = deserializerArgumentsText.replaceAll('\\"', '"')
 
@@ -133,9 +123,10 @@ export class StoredMapConverter {
                     }
 
                 }
-                
+
                 // Pass them to the deserializer.
                 jsonObject = deserialize(deserializerArguments)
+
             }
 
         }
@@ -177,7 +168,7 @@ export class StoredMapConverter {
             // If arguments are returned, then re-assign the modification value and break the loop.
             if (stringArray) {
                 // Format the arguments into a string.
-                let argumentsText = stringArray.map((string) => this.stringify(string)).join(',')
+                let argumentsText = stringArray.map((string: any) => this.stringify(string)).join(',')
 
                 // Re-assign the modification value.
                 modificationValue = `${serializerName}(${argumentsText})`

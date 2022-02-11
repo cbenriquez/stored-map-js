@@ -3,10 +3,10 @@
  */
 export declare class StoredMapConverter {
     deserializer: {
-        [deserializerName: string]: (args: any[]) => any;
+        [deserializerName: string]: (args: any) => any;
     };
     serializer: {
-        [serializerName: string]: (value: any) => any[] | undefined;
+        [serializerName: string]: (value: any) => any | undefined;
     };
     constructor();
     parse<V>(json: string): V;
