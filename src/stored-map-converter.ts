@@ -26,43 +26,19 @@ export class StoredMapConverter {
     public serializers: {[serializerName: string]: Serializer} = {}
 
     constructor() {
-        // Implement serializer and deserializer for Infinity.
+        // Implement serializers.
         this.serializers['Infinity'] = new InfinitySerializer()
-        
-        // Implement serializer and deserializer for -Infinity.
         this.serializers['-Infinity'] = new NegativeInfinitySerializer()
-
-        // Implement serializer and deserializer for NaN.
         this.serializers['NaN'] = new NotANumberSerializer()
-
-        // Implement serializer and deserializer for undefined.
         this.serializers['undefined'] = new UndefinedSerializer()
-
-        // Implement serializer and deserializer for BigInt.
         this.serializers['BigInt'] = new BigIntSerializer()
-
-        // Implement serializer and deserializer for Date.
         this.serializers['Date'] = new DateSerializer()
-
-        // // Implement serializer and deserializer for StoredMap.
         this.serializers['StoredMap'] = new StoredMapSerializer()
-
-        // Implement serializer and deserializer for Map.
         this.serializers['Map'] = new MapSerializer()
-
-        // Implement serializer and deserializer for Set.
         this.serializers['Set'] = new SetSerializer()
-
-        // Implement serializer and deserializer for Async Function.
         this.serializers['AsyncFunction'] = new AsyncFunctionSerializer()
-
-        // Implement serializer and deserializer for Async Generator Function.
         this.serializers['AsyncGeneratorFunction'] = new AsyncGeneratorFunctionSerializer()
-
-        // Implement serializer and deserializer for Generator Function.
         this.serializers['GeneratorFunction'] = new GeneratorFunctionSerializer()
-
-        // Implement serializer and deserializer for Function.
         this.serializers['Function'] = new FunctionSerializer()
 
     }

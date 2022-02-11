@@ -9,7 +9,7 @@ export type AsyncFunctionSerialized = [...string[], string]
 export class AsyncFunctionSerializer implements Serializer {
 
     public serialize(value: any): AsyncFunctionSerialized | undefined {
-        // If the value is an instance of Async Funciton, return the serialized function body.
+        // If the value is an instance of Async Function, return the serialized function body.
         if (value instanceof AsyncFunction) {
             return serializeFunction(value)
         }

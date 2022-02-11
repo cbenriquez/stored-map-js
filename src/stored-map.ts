@@ -220,26 +220,23 @@ export class StoredMap {
             })
         })
 
-        // Handle it if the memory usage does not exceed the memory limit.
-        if (this.cacher.memoryUsage < this.cacher.memoryLimit) {
-            // If file statistics are defined, get its last modified time. Otherwise, await a promise to retrieve it.
-            lastModified = lastModified || await new Promise<number | undefined>((resolve) => {
-                stat(filePath, (err, stats) => {
-                    if (err != undefined) resolve(undefined)
-                    else resolve(stats.mtimeMs)
-                })
+        // If file statistics are defined, get its last modified time. Otherwise, await a promise to retrieve it.
+        lastModified = lastModified || await new Promise<number | undefined>((resolve) => {
+            stat(filePath, (err, stats) => {
+                if (err != undefined) resolve(undefined)
+                else resolve(stats.mtimeMs)
             })
-            
-            // If it failed, return.
-            if (lastModified == undefined) return
+        })
+        
+        // If it failed, return.
+        if (lastModified == undefined) return
 
-            // If a cache of this key is found, delete it.
-            let cacheIndex = this.cacher.find(storeKey)
-            if (cacheIndex != undefined) this.cacher.delete(cacheIndex)
+        // If a cache of this key is found, delete it.
+        let cacheIndex = this.cacher.find(storeKey)
+        if (cacheIndex != undefined) this.cacher.delete(cacheIndex)
 
-            // Push the store key, value, and last modified time into the cache storage.
-            this.cacher.push(storeKey, value, lastModified)
-        }
+        // Push the store key, value, and last modified time into the cache storage.
+        this.cacher.push(storeKey, value, lastModified)
 
     }
 
