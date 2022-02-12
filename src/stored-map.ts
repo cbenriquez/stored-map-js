@@ -1,3 +1,4 @@
+import { copy } from "copy-anything"
 import { randomUUID } from "crypto"
 import { mkdir, readdir, readFile, stat, unlink, writeFile } from "fs"
 import { join } from "path"
@@ -9,20 +10,12 @@ import { StoredMapConverter } from "./stored-map-converter.js"
  * An asynchronously iterable map object that stores key-value pairs on the disk.
  */
 export class StoredMap {
-    /**
-     * The working directory of the object.
-     */
+
     public path: string
-
-    /**
-     * The object containing the conversion functions of the object.
-     */
     public converter: StoredMapConverter
-
-    /**
-     * The object containing the caching functions of the object.
-     */
     public cacher: StoredMapCacher
+
+    public [Symbol.asyncIterator] = this.entries
 
     /**
      * An asynchronously iterable map object that stores key-value pairs on the disk.
@@ -43,96 +36,10 @@ export class StoredMap {
     }
 
     /**
-     * Joins the working directory of the object and the JSON file.
-     */
-    public getFilePath(storeKey: string) {
-        // Return path and the store key with the JSON extension.
-        return join(this.path, storeKey + '.json')
-
-    }
-
-    /**
-     * Retrieves the value of the store key in the object.
-     */
-    public async getValueFromStoreKey<V>(storeKey: string): Promise<V | undefined> {
-        // Get the file path from the store key.
-        let filePath = this.getFilePath(storeKey)
-
-        // Try to get the last modified time of the file.
-        let fileLastModified = await new Promise<number | undefined>((resolve) => {
-            stat(filePath, (err, stats) => {
-                if (err != undefined) resolve(undefined)
-                else resolve (stats.mtimeMs)
-            })
-        })
-        
-
-        // Try to get the index of the store key in the cache.
-        let cacheIndex = this.cacher.find(storeKey)
-
-        // Name the return value.
-        let value
-
-        // Handle if the index exists.
-        if (cacheIndex != undefined) {
-            // Get the cache triple from the index.
-            let cacheTriple = this.cacher.cacheStorage[cacheIndex]
-
-            // Name the cache's last modified time.
-            let cacheLastModified = cacheTriple[2]
-
-            // Handle if the last modified time of the file matches the last modified time in the cache.
-            if (fileLastModified == cacheLastModified) {
-                // Name the cache value of the triple.
-                let cacheValue = cacheTriple[1]
-
-                // If the cache value is an object, copy it to the return value. Otherwise, assign it.
-                if (typeof cacheValue == 'object') {
-                    value = Object.assign({}, [cacheValue])[0]
-                } else {
-                    value = cacheValue
-                }
-                
-            }
-
-        }
-
-        // Handle if the value is undefined and the last modified time of the file was accessible.
-        if (value == undefined && fileLastModified != undefined) {
-            // Await a promise to retrieve the value from the file.
-            value = await new Promise<V | undefined>((resolve) => {
-                // Read the file in UTF-8 encoded string.
-                readFile(filePath, 'utf-8', (err, data) => {
-                    // Return undefined on read error, or try to parse the data and return. On error, return undefined.
-                    if (err) return resolve(undefined)
-                    try {
-                        resolve(this.converter.parse(data))
-                    } catch(e) {
-                        resolve(undefined)
-                    }
-    
-                })
-    
-            })
-
-            // If the value is defined, push it into the cache.
-            if (value != undefined) {
-                if (cacheIndex) this.cacher.delete(cacheIndex)
-                this.cacher.push(storeKey, value, fileLastModified)
-            }
-
-        }
-
-        // Return the value.
-        return value
-
-    }
-
-    /**
      * Retrieves the value of the key in the object.
      * If failed, returns undefined.
      */
-    public async get<V>(key: any): Promise<V | undefined> {
+    public async get<V>(key: any) {
         // Convert key to store key.
         let storeKey = this.converter.convertKeyToStoreKey(key)
 
@@ -303,42 +210,6 @@ export class StoredMap {
     }
 
     /**
-     * Returns every entity in the current working directory.
-     */
-    public async entities() {
-        return new Promise<string[]>((resolve) => { 
-            readdir(this.path, (err, entities) => {
-                if (err) resolve([])
-                else resolve(entities)
-            })
-        })
-    }
-
-    /**
-     * An asynchronous generator for iterating through every store keys in the object.
-     */
-    public async* storeKeys() {
-        // Loop through every folder and file.
-        for (let entity of await this.entities()) {
-            // Handle the entity if its name ends with '.json'
-            if (entity.endsWith('.json')) {
-                // If the entity's statistics shows that it is a file, yield the file with no extension as the store key.
-                if (await new Promise<boolean>((resolve) => {
-                    stat(join(this.path, entity), (err, stats) => {
-                        if (err || stats.isDirectory()) resolve(false)
-                        else resolve(true)
-                    })
-                })) {
-                    yield entity.slice(0, entity.indexOf('.json'))
-                }
-    
-            }
-
-        }
-
-    }
-
-    /**
      * Counts the amount of keys in the object.
      */
     public async size() {
@@ -429,52 +300,113 @@ export class StoredMap {
 
     }
 
-    // Connect this object's async iterator to the entries function.
-    public [Symbol.asyncIterator] = this.entries
+    private getFilePath(storeKey: string) {
+        // Return path and the store key with the JSON extension.
+        return join(this.path, storeKey + '.json')
+
+    }
+    
+    private async getValueFromStoreKey<V>(storeKey: string): Promise<V | undefined> {
+        // Get the file path from the store key.
+        let filePath = this.getFilePath(storeKey)
+
+        // Try to get the last modified time of the file.
+        let fileLastModified = await new Promise<number | undefined>((resolve) => {
+            stat(filePath, (err, stats) => {
+                if (err != undefined) resolve(undefined)
+                else resolve (stats.mtimeMs)
+            })
+        })
+        
+
+        // Try to get the index of the store key in the cache.
+        let cacheIndex = this.cacher.find(storeKey)
+
+        // Name the return value.
+        let value
+
+        // Handle if the index exists.
+        if (cacheIndex != undefined) {
+            // Get the cache triple from the index.
+            let cacheTriple = this.cacher.cacheStorage[cacheIndex]
+
+            // Name the cache's last modified time.
+            let cacheLastModified = cacheTriple[2]
+
+            // Handle if the last modified time of the file matches the last modified time in the cache.
+            if (fileLastModified == cacheLastModified) {
+                // Name the cache value of the triple.
+                let cacheValue = cacheTriple[1]
+
+                // Copy the cache value to the value.
+                value = copy(cacheValue)
+                
+            }
+
+        }
+
+        // Handle if the value is undefined and the last modified time of the file was accessible.
+        if (value == undefined && fileLastModified != undefined) {
+            // Await a promise to retrieve the value from the file.
+            value = await new Promise<V | undefined>((resolve) => {
+                // Read the file in UTF-8 encoded string.
+                readFile(filePath, 'utf-8', (err, data) => {
+                    // Return undefined on read error, or try to parse the data and return. On error, return undefined.
+                    if (err) return resolve(undefined)
+                    try {
+                        resolve(this.converter.parse(data))
+                    } catch(e) {
+                        resolve(undefined)
+                    }
+    
+                })
+    
+            })
+
+            // If the value is defined, push it into the cache.
+            if (value != undefined) {
+                if (cacheIndex) this.cacher.delete(cacheIndex)
+                this.cacher.push(storeKey, value, fileLastModified)
+            }
+
+        }
+
+        // Return the value.
+        return value
+
+    }
+    
+    private async* storeKeys() {
+        // Loop through every folder and file.
+        for (let entity of await this.entities()) {
+            // Handle the entity if its name ends with '.json'
+            if (entity.endsWith('.json')) {
+                // If the entity's statistics shows that it is a file, yield the file with no extension as the store key.
+                if (await new Promise<boolean>((resolve) => {
+                    stat(join(this.path, entity), (err, stats) => {
+                        if (err || stats.isDirectory()) resolve(false)
+                        else resolve(true)
+                    })
+                })) {
+                    yield entity.slice(0, entity.indexOf('.json'))
+                }
+    
+            }
+
+        }
+
+    }
 
     /**
-     * Dumps as many small files as possible into the cache.
+     * Returns every entity in the current working directory.
      */
-    public async initializeCache() {
-        // Initialize the array of store keys and sizes.
-        let storeKeysWithSizes: [string, number][] = []
-
-        // Iterate through every entity.
-        for (let entity of await this.entities()) {
-            // Handle if the entity ends with '.json'.
-            if (entity.endsWith('.json')) {
-                // Await a promise to perform a check on the entity's statistics.
-                await new Promise<void>((resolve) => {
-                    stat(join(this.path, entity), (err, stats) => {
-                        // If the entity is a file, push the file and its size to the array.
-                        if (err == undefined && stats.isFile()) {
-                            storeKeysWithSizes.push([entity, stats.size])
-                        }
-
-                        resolve()
-                    })
-                })
-
-            }
-
-        }
-
-        // Sort the pairs in the array from lowest size to highest.
-        storeKeysWithSizes = storeKeysWithSizes.sort((a, b) => a[1] - b[1])
-
-        // Iterate through the store keys.
-        for (let [storeKey, size] of storeKeysWithSizes) {
-            // Handle if the sum of the memory usage and the size is less than the memory limit.
-            if (this.cacher.memoryUsage + size < this.cacher.memoryLimit) {
-                // Retrieve their value to store them into cache.
-                await this.getValueFromStoreKey(storeKey)
-            }
-            
-            // Otherwise, if the sum exceeds the limit, break the iteration.
-            else break
-
-        }
-
+     private async entities() {
+        return new Promise<string[]>((resolve) => { 
+            readdir(this.path, (err, entities) => {
+                if (err) resolve([])
+                else resolve(entities)
+            })
+        })
     }
 
 }

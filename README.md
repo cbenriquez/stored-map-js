@@ -37,12 +37,6 @@ Install the production version in the npm Registry.
 npm install stored-map
 ```
 
-### Github
-Install the latest development version in GitHub.
-```bash
-npm install github:cbenriquez/stored-map-js
-```
-
 ## Features
 
 ### Key-Value Pairs

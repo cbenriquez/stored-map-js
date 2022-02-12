@@ -141,7 +141,7 @@ export class StoredMapConverter {
         // Handle if the modification value is of type "object".
         if (typeof modificationValue == 'object') {
             // Stringify every value of the object.
-            for (let key of Object.keys(modificationValue)) {      
+            for (let key in modificationValue) {      
                 // Stringify the value.
                 let stringifyValue = this.stringify(value[key])
 
@@ -188,9 +188,7 @@ export class StoredMapConverter {
 
         try {
             // Try to return the key decoded back to ASCII format and parsed.
-            let ascii = Buffer.from(key, 'base64url').toString('ascii')
-            let parsed = this.parse<any>(ascii)
-            return parsed
+            return this.parse<any>(Buffer.from(key, 'base64url').toString('ascii'))
 
         } catch(e) {
             // It may fail if the store key was not a valid JSON Base64. In that case, return the key as the store key.
