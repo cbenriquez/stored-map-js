@@ -3,7 +3,7 @@ import { serializeFunction } from "./function.js";
 export let AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
 export class AsyncFunctionSerializer {
     serialize(value) {
-        // If the value is an instance of Async Funciton, return the serialized function body.
+        // If the value is an instance of Async Function, return the serialized function body.
         if (value instanceof AsyncFunction) {
             return serializeFunction(value);
         }

@@ -175,27 +175,24 @@ export class StoredMap {
                     resolve();
             });
         });
-        // Handle it if the memory usage does not exceed the memory limit.
-        if (this.cacher.memoryUsage < this.cacher.memoryLimit) {
-            // If file statistics are defined, get its last modified time. Otherwise, await a promise to retrieve it.
-            lastModified = lastModified || await new Promise((resolve) => {
-                stat(filePath, (err, stats) => {
-                    if (err != undefined)
-                        resolve(undefined);
-                    else
-                        resolve(stats.mtimeMs);
-                });
+        // If file statistics are defined, get its last modified time. Otherwise, await a promise to retrieve it.
+        lastModified = lastModified || await new Promise((resolve) => {
+            stat(filePath, (err, stats) => {
+                if (err != undefined)
+                    resolve(undefined);
+                else
+                    resolve(stats.mtimeMs);
             });
-            // If it failed, return.
-            if (lastModified == undefined)
-                return;
-            // If a cache of this key is found, delete it.
-            let cacheIndex = this.cacher.find(storeKey);
-            if (cacheIndex != undefined)
-                this.cacher.delete(cacheIndex);
-            // Push the store key, value, and last modified time into the cache storage.
-            this.cacher.push(storeKey, value, lastModified);
-        }
+        });
+        // If it failed, return.
+        if (lastModified == undefined)
+            return;
+        // If a cache of this key is found, delete it.
+        let cacheIndex = this.cacher.find(storeKey);
+        if (cacheIndex != undefined)
+            this.cacher.delete(cacheIndex);
+        // Push the store key, value, and last modified time into the cache storage.
+        this.cacher.push(storeKey, value, lastModified);
     }
     /**
      * Deletes the key-value pair associated with the given key from the object.
@@ -309,7 +306,7 @@ export class StoredMap {
             let isValidUuid = validate(storeKey);
             // If the key-UUID pairs exists and the store key is a valid UUID, loop through every pair.
             if (keyUuidPairs && isValidUuid) {
-                for (let [key, uuid] of keyUuidPairs) {
+                for (let [key, uuid] of Object.entries(keyUuidPairs)) {
                     // If the store key and UUID is the same, yield the key.
                     if (storeKey == uuid)
                         yield key;
@@ -318,8 +315,9 @@ export class StoredMap {
             // Otherwise, if it is not a valid UUID, try to convert the store key in hand to a key.
             else if (!isValidUuid) {
                 // Only convert if the store key isn't essential to Store Map.
+                let key = this.converter.convertStoreKeyToKey(storeKey);
                 if (storeKey != 'key-uuid-pairs')
-                    yield this.converter.convertStoreKeyToKey(storeKey);
+                    yield key;
             }
         }
     }

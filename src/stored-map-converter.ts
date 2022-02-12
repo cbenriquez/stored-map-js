@@ -1,3 +1,4 @@
+import { copy } from "copy-anything"
 import { AsyncFunctionSerializer } from "./serializers/async-function.js"
 import { AsyncGeneratorFunctionSerializer } from "./serializers/async-generator-function.js"
 import { BigIntSerializer } from "./serializers/big-int.js"
@@ -102,18 +103,8 @@ export class StoredMapConverter {
         else if (typeof jsonObject == 'object') {
             // Parse and re-assign every value of they object.
             for (let key of Object.keys(jsonObject)) {
-                // If the value of the key is a string, then add quotation marks around it.
-                if (typeof jsonObject[key] == 'string') {
-                    jsonObject[key] = `"${jsonObject[key]}"`
-                }
-
-                // If the value of the key is a object, then stringify the value.
-                else if (typeof jsonObject[key] == 'object') {
-                    jsonObject[key] = this.stringify(jsonObject[key])
-                }
-
                 // Parse the value and re-assign.
-                jsonObject[key] = this.parse(jsonObject[key])
+                jsonObject[key] = this.parse(this.stringify(jsonObject[key]))
             }
 
         }
@@ -124,8 +115,8 @@ export class StoredMapConverter {
     }
 
     public stringify(value: any): string {
-        // Store a copy of the value for modification.
-        let modificationValue = value
+        // Create a copy of the value for modification.
+        let modificationValue = copy(value)
 
         // Loop every serializer and pass the modification value onto them so it may return a string array.
         for (let [serializerName, serializer] of Object.entries(this.serializers)) {
@@ -149,9 +140,6 @@ export class StoredMapConverter {
 
         // Handle if the modification value is of type "object".
         if (typeof modificationValue == 'object') {
-            // Clone the object.
-            modificationValue = Object.assign({}, [value])[0]
-
             // Stringify every value of the object.
             for (let key of Object.keys(modificationValue)) {      
                 // Stringify the value.
@@ -182,7 +170,7 @@ export class StoredMapConverter {
 
         // Format the JSON string as a Base64 URL
         let base64 = Buffer.from(json).toString('base64url')
-
+        
         // If the Base64 string is not a valid store key, throw an error. Otherwise, return it.
         let validStoreKeyCheck = isValidStoreKey(base64)
         if (validStoreKeyCheck != true) throw new Error(`Failed to convert key to store key (${validStoreKeyCheck.message}).`)
@@ -197,10 +185,12 @@ export class StoredMapConverter {
 
         // A copy of the store key and if it includes ".json" then it is removed.
         let key = storeKey.includes('.json') && storeKey.slice(0, storeKey.lastIndexOf('.json')) || storeKey
-        
+
         try {
             // Try to return the key decoded back to ASCII format and parsed.
-            return this.parse<any>(Buffer.from(key, 'base64url').toString('ascii'))
+            let ascii = Buffer.from(key, 'base64url').toString('ascii')
+            let parsed = this.parse<any>(ascii)
+            return parsed
 
         } catch(e) {
             // It may fail if the store key was not a valid JSON Base64. In that case, return the key as the store key.

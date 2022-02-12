@@ -2,6 +2,33 @@
 
 An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk.
 
+## Demonstration
+
+```TypeScript
+// Initialize the map object.
+let map = new StoredMap('dist/work_dir')
+
+// Set some values.
+await map.set('foo', 'bar')
+await map.set([new Date()], 'baz')
+await map.set('f' + 'o'.repeat(500), ['gar'])
+
+/** The following files will appear in your work_dir folder:
+ * 1. foo.json
+ * 2. 9d9b0239-50f9-4cbd-a1e5-35d415d42417.json
+ * 3. WyJEYXRlKDE2NDQ2NjEwMjcwNzcpIl0.json
+ * 4. key-uuid-pairs.json
+*/
+
+// Iterate through the object.
+for await (let [key, value] of map) {
+    console.log('Key:', key, 'Value:', value)
+}
+
+// Delete every pair.
+await map.clear()
+```
+
 ## Installation
 
 ### Node

@@ -357,15 +357,15 @@ export class StoredMap {
      */
     public async* keys() {
         // Try to retrieve every key-UUID pair.
-        let keyUuidPairs = await this.get<Map<string, string>>('key-uuid-pairs')
-
+        let keyUuidPairs = await this.get<{[key: string]: string}>('key-uuid-pairs')
+        
         // Iterate through every store key and try to get their key.
         for await (let storeKey of this.storeKeys()) {
             let isValidUuid = validate(storeKey)
 
             // If the key-UUID pairs exists and the store key is a valid UUID, loop through every pair.
             if (keyUuidPairs && isValidUuid) {
-                for (let [key, uuid] of keyUuidPairs) {
+                for (let [key, uuid] of Object.entries(keyUuidPairs)) {
                     // If the store key and UUID is the same, yield the key.
                     if (storeKey == uuid) yield key
 
@@ -375,7 +375,8 @@ export class StoredMap {
             // Otherwise, if it is not a valid UUID, try to convert the store key in hand to a key.
             else if (!isValidUuid) {
                 // Only convert if the store key isn't essential to Store Map.
-                if (storeKey != 'key-uuid-pairs') yield this.converter.convertStoreKeyToKey(storeKey)
+                let key = this.converter.convertStoreKeyToKey(storeKey)
+                if (storeKey != 'key-uuid-pairs') yield key
                 
             }
 
