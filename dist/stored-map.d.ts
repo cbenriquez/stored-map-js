@@ -1,4 +1,3 @@
-import { StoredMapCacher } from "./stored-map-cache.js";
 import { StoredMapConverter } from "./stored-map-converter.js";
 export interface StoredMapOptions {
     /** Indicate the maximum amount of RAM in bytes that the object can use at one time. */
@@ -12,8 +11,14 @@ export declare class StoredMap {
     path: string;
     /** Contain the conversion functions. */
     converter: StoredMapConverter;
-    /** Contain the caching system. */
-    cacher: StoredMapCacher;
+    /** Indicate the maximum amount of RAM in bytes that the cache storage can use at a time. */
+    memoryLimit: number;
+    /** Indicate the amount of RAM in bytes occupying the cache storage. */
+    memoryUsage: number;
+    /** Contain cached items. */
+    cacheStorage: {
+        [filename: string]: [any, number];
+    };
     /** Indicate the filename of the UUID dictionary. */
     uuidDictionary: string;
     /** Return an iterator for key-value pairs. */
@@ -41,7 +46,12 @@ export declare class StoredMap {
     values(): AsyncGenerator<any>;
     /** Return an iterator for every key-value pair. */
     entries(): AsyncGenerator<[any, any]>;
+    /** Return a promise to retrieve statistics for a file in the path. */
     private getFileStatistics;
+    /** Delete an item from the cache storage. */
+    private deleteCache;
+    /** Insert an item into cache storage. Return `true` if successful, otherwise return `false`. */
+    private cache;
     /** Return an array of files and folders in the path. */
     private getFiles;
     /** Return an iterator for every key value files */

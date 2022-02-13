@@ -4,7 +4,7 @@ import { randomUUID } from "crypto";
 import { mkdir, readdir, readFile, stat, unlink, writeFile } from "fs";
 import { join } from "path";
 import validate from "uuid-validate";
-import { StoredMapCacher } from "./stored-map-cache.js";
+import { getObjectSize } from "./object-size.js";
 import { StoredMapConverter } from "./stored-map-converter.js";
 /** An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk. */
 export class StoredMap {
@@ -13,12 +13,16 @@ export class StoredMap {
      * @param options Contain the options.
     */
     constructor(path, options = {}) {
+        /** Indicate the amount of RAM in bytes occupying the cache storage. */
+        this.memoryUsage = 0;
+        /** Contain cached items. */
+        this.cacheStorage = {};
         /** Indicate the filename of the UUID dictionary. */
         this.uuidDictionary = 'uuid-dictionary';
         /** Return an iterator for key-value pairs. */
         this[_a] = this.entries;
         this.path = path;
-        this.cacher = new StoredMapCacher(options.memoryLimit || 100000000);
+        this.memoryLimit = options.memoryLimit || 100000000;
         this.converter = options.converter || new StoredMapConverter();
     }
     /** Get the value of the key. If failed, return `undefined`. */
@@ -38,12 +42,12 @@ export class StoredMap {
         let filePath = join(this.path, filename);
         let fileStatistics = await this.getFileStatistics(filename);
         if (fileStatistics != undefined) {
-            let cacheIndex = this.cacher.find(filename);
-            if (cacheIndex != undefined) {
-                let cacheTriple = this.cacher.cacheStorage[cacheIndex];
-                let cacheLastModified = cacheTriple[2];
-                if (fileStatistics.mtimeMs == cacheLastModified) {
-                    let cacheValue = cacheTriple[1];
+            let fileLastModified = fileStatistics.mtimeMs;
+            let cacheItem = this.cacheStorage[filename];
+            if (cacheItem != undefined) {
+                let cacheLastModified = cacheItem[1];
+                if (fileLastModified == cacheLastModified) {
+                    let cacheValue = cacheItem[0];
                     value = copy(cacheValue);
                 }
             }
@@ -61,10 +65,7 @@ export class StoredMap {
                     });
                 });
                 if (value != undefined) {
-                    if (cacheIndex != undefined) {
-                        this.cacher.delete(cacheIndex);
-                    }
-                    this.cacher.push(filename, value, fileStatistics.mtimeMs);
+                    this.cache(filename, [value, fileLastModified]);
                 }
             }
         }
@@ -107,10 +108,8 @@ export class StoredMap {
             fileStatistics = await this.getFileStatistics(filename);
         }
         if (fileStatistics != undefined) {
-            let cacheIndex = this.cacher.find(filename);
-            if (cacheIndex != undefined)
-                this.cacher.delete(cacheIndex);
-            this.cacher.push(filename, value, fileStatistics.mtimeMs);
+            let fileLastModified = fileStatistics.mtimeMs;
+            this.cache(filename, [value, fileLastModified]);
         }
     }
     /** Delete a key-value pair. Return `true` if successful, otherwise return `false`. */
@@ -138,9 +137,9 @@ export class StoredMap {
             });
         });
         if (deleted == true) {
-            let cacheIndex = this.cacher.find(filename);
-            if (cacheIndex != undefined) {
-                this.cacher.delete(cacheIndex);
+            let cacheItem = this.cacheStorage[filename];
+            if (cacheItem != undefined) {
+                this.deleteCache(filename);
             }
             if (uuidDictionary != undefined) {
                 delete uuidDictionary[filename];
@@ -211,6 +210,7 @@ export class StoredMap {
             yield [key, await this.get(key)];
         }
     }
+    /** Return a promise to retrieve statistics for a file in the path. */
     async getFileStatistics(filename) {
         return new Promise((resolve) => {
             stat(join(this.path, filename), (error, statistics) => {
@@ -222,6 +222,29 @@ export class StoredMap {
                 }
             });
         });
+    }
+    /** Delete an item from the cache storage. */
+    deleteCache(key) {
+        this.memoryUsage -= getObjectSize(this.cacheStorage[key]);
+        delete this.cacheStorage[key];
+    }
+    /** Insert an item into cache storage. Return `true` if successful, otherwise return `false`. */
+    cache(key, item) {
+        let memory = getObjectSize(item);
+        let cacheKeys = Object.keys(this.cacheStorage);
+        while (memory + this.memoryUsage > this.memoryLimit) {
+            let cacheKey = cacheKeys.shift();
+            if (cacheKey == undefined) {
+                return false;
+            }
+            this.deleteCache(cacheKey);
+        }
+        if (key in this.cacheStorage) {
+            this.deleteCache(key);
+        }
+        this.cacheStorage[key] = item;
+        this.memoryUsage += memory;
+        return true;
     }
     /** Return an array of files and folders in the path. */
     async getFiles() {
