@@ -1,86 +1,49 @@
 import { StoredMapCacher } from "./stored-map-cache.js";
 import { StoredMapConverter } from "./stored-map-converter.js";
-/**
- * An asynchronously iterable map object that stores key-value pairs on the disk.
- */
+export interface StoredMapOptions {
+    /** Indicate the maximum amount of RAM in bytes that the object can use at one time. */
+    memoryLimit?: number;
+    /** Contain the conversion functions. */
+    converter?: StoredMapConverter;
+}
+/** An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk. */
 export declare class StoredMap {
-    /**
-     * The working directory of the object.
-     */
+    /** Indicate the working directory.*/
     path: string;
-    /**
-     * The object containing the conversion functions of the object.
-     */
+    /** Contain the conversion functions. */
     converter: StoredMapConverter;
-    /**
-     * The object containing the caching functions of the object.
-     */
+    /** Contain the caching system. */
     cacher: StoredMapCacher;
-    /**
-     * An asynchronously iterable map object that stores key-value pairs on the disk.
-     * @param path The working directory of the object.
-     * @param memoryLimit The amount of memory in bytes budgeted to the object for caching.
-     * @param converter The object containing the conversion functions of the object.
-     */
-    constructor(path: string, memoryLimit?: number, converter?: StoredMapConverter);
-    /**
-     * Joins the working directory of the object and the JSON file.
-     */
-    getFilePath(storeKey: string): string;
-    /**
-     * Retrieves the value of the store key in the object.
-     */
-    getValueFromStoreKey<V>(storeKey: string): Promise<V | undefined>;
-    /**
-     * Retrieves the value of the key in the object.
-     * If failed, returns undefined.
-     */
-    get<V>(key: any): Promise<V | undefined>;
-    /**
-     * Assigns a value to a key in the object.
-     * If failed, throws an Error.
-     */
-    set(key: any, value: any): Promise<void>;
-    /**
-     * Deletes the key-value pair associated with the given key from the object.
-     * If successful, returns true, false if otherwise.
-     */
-    delete(key: any): Promise<boolean>;
-    /**
-     * Returns every entity in the current working directory.
-     */
-    entities(): Promise<string[]>;
-    /**
-     * An asynchronous generator for iterating through every store keys in the object.
-     */
-    storeKeys(): AsyncGenerator<string, void, unknown>;
-    /**
-     * Counts the amount of keys in the object.
-     */
-    size(): Promise<number>;
-    /**
-     * An asynchronous generator for iterating through every keys in the object.
-     */
-    keys(): AsyncGenerator<any, void, unknown>;
-    /**
-     * Checks whether or not the key exists in the object.
-     */
-    has(key: any): Promise<boolean>;
-    /**
-     * Deletes every key-value pair in the object.
-     */
-    clear(): Promise<void>;
-    /**
-     * An asynchronous generator for iterating through every value in the object.
-     */
-    values(): AsyncGenerator<any>;
-    /**
-     * An asynchronous generator for iterating through every key-value pair in the object.
-     */
-    entries(): AsyncGenerator<[any, any]>;
+    /** Indicate the filename of the UUID dictionary. */
+    uuidDictionary: string;
+    /** Return an iterator for key-value pairs. */
     [Symbol.asyncIterator]: () => AsyncGenerator<[any, any]>;
-    /**
-     * Dumps as many small files as possible into the cache.
-     */
-    initializeCache(): Promise<void>;
+    /** Construct `StoredMap` object.
+     * @param path Indicate the working directory.
+     * @param options Contain the options.
+    */
+    constructor(path: string, options?: StoredMapOptions);
+    /** Get the value of the key. If failed, return `undefined`. */
+    get<V>(key: any): Promise<V | undefined>;
+    /** Assign a value to a key. If failed, throw `Error`. */
+    set(key: any, value: any): Promise<void>;
+    /** Delete a key-value pair. Return `true` if successful, otherwise return `false`. */
+    delete(key: any): Promise<boolean>;
+    /** Return how many key-value pairs exist. */
+    size(): Promise<number>;
+    /** Return an iterator for every key. */
+    keys(): AsyncGenerator<any, void, unknown>;
+    /** Return `true` if the key exists, otherwise return `false`. */
+    has(key: any): Promise<boolean>;
+    /** Delete every key-value pair. */
+    clear(): Promise<void>;
+    /** Return an iterator for every value. */
+    values(): AsyncGenerator<any>;
+    /** Return an iterator for every key-value pair. */
+    entries(): AsyncGenerator<[any, any]>;
+    private getFileStatistics;
+    /** Return an array of files and folders in the path. */
+    private getFiles;
+    /** Return an iterator for every key value files */
+    private keyValueFiles;
 }

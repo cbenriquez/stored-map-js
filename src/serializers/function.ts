@@ -28,7 +28,6 @@ export function serializeFunction(object: any): [...string[], string] {
 }
 
 export class FunctionSerializer implements Serializer {
-
     public serialize(value: any): FunctionSerialized | undefined {
         // If the value is an instance of Function, return the serialized function body.
         if (value instanceof Function) {
@@ -42,5 +41,4 @@ export class FunctionSerializer implements Serializer {
         return new Function(...args)
         
     }
-
 }

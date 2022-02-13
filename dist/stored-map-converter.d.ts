@@ -2,9 +2,7 @@ export interface Serializer {
     serialize: (value: any) => any | undefined;
     deserialize: (args: any) => any;
 }
-/**
- * A class that provides the functions for StoredMap objects to convert values to and from the Javascript Object Notation format.
- */
+/** A class that provides the functions for StoredMap objects to convert values to and from the Javascript Object Notation format. */
 export declare class StoredMapConverter {
     serializers: {
         [serializerName: string]: Serializer;
@@ -12,6 +10,7 @@ export declare class StoredMapConverter {
     constructor();
     parse<V>(json: string): V;
     stringify(value: any): string;
-    convertKeyToStoreKey(key: any): string;
-    convertStoreKeyToKey(storeKey: string): any;
+    convertKeyToFilename(key: any): string;
+    convertFilenameToKey(filename: string): any;
+    private failedToConvertMessage;
 }
