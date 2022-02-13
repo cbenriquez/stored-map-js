@@ -181,12 +181,18 @@ export class StoredMap {
     }
     /** Return `true` if the key exists, otherwise return `false`. */
     async has(key) {
-        for await (let key2 of this.keys()) {
-            if (key == key2) {
-                return true;
+        let filename = this.converter.convertKeyToFilename(key);
+        if (filename.length > 255) {
+            let uuidDictionary = await this.get(this.uuidDictionary);
+            if (uuidDictionary == undefined)
+                return;
+            let uuid = uuidDictionary[filename];
+            if (uuid == undefined) {
+                return;
             }
+            filename = uuid;
         }
-        return false;
+        return await this.getFileStatistics(filename) != undefined;
     }
     /** Delete every key-value pair. */
     async clear() {

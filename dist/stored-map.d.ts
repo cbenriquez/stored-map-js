@@ -39,7 +39,7 @@ export declare class StoredMap {
     /** Return an iterator for every key. */
     keys(): AsyncGenerator<any, void, unknown>;
     /** Return `true` if the key exists, otherwise return `false`. */
-    has(key: any): Promise<boolean>;
+    has(key: any): Promise<boolean | undefined>;
     /** Delete every key-value pair. */
     clear(): Promise<void>;
     /** Return an iterator for every value. */
