@@ -20,9 +20,10 @@ export interface Serializer {
 
 /** A class that provides the functions for StoredMap objects to convert values to and from the Javascript Object Notation format. */
 export class StoredMapConverter {
-
+    /** Contain the serializers. */
     public serializers: {[serializerName: string]: Serializer} = {}
 
+    /** Construct `StoredMapConverter` object */
     constructor() {
         this.serializers['Infinity'] = new InfinitySerializer()
         this.serializers['-Infinity'] = new NegativeInfinitySerializer()
@@ -38,6 +39,7 @@ export class StoredMapConverter {
         this.serializers['Function'] = new FunctionSerializer()
     }
 
+    /** Convert a JSON string into an object. */
     public parse<V>(json: string): V {
         let jsonObject = JSON.parse(json)
         if (typeof jsonObject == 'string') {
@@ -74,6 +76,7 @@ export class StoredMapConverter {
         return jsonObject
     }
 
+    /** Convert an object into a JSON string. */
     public stringify(value: any): string {
         let modificationValue = copy(value)
         for (let [serializerName, serializer] of Object.entries(this.serializers)) {
@@ -95,6 +98,7 @@ export class StoredMapConverter {
         return JSON.stringify(modificationValue)
     }
 
+    /** Convert a key into a filename. */
     public convertKeyToFilename(key: any) {
         let filename
         if (typeof key == 'string' && isValidKeyValueFile(key) == true) {
@@ -108,6 +112,7 @@ export class StoredMapConverter {
         return filename + '.json'
     }
 
+    /** Convert a filename into a key. */
     public convertFilenameToKey(filename: string) {
         if (isValidKeyValueFile(filename) == false) {
             throw new Error(this.failedToConvertMessage)
