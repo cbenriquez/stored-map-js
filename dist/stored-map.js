@@ -188,7 +188,7 @@ export class StoredMap {
                 return;
             let uuid = uuidDictionary[filename];
             if (uuid == undefined) {
-                return;
+                return false;
             }
             filename = uuid;
         }

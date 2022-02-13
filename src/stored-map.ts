@@ -121,9 +121,7 @@ export class StoredMap {
                 else resolve()
             })
         })
-        if (fileStatistics == undefined) {
-            fileStatistics = await this.getFileStatistics(filename)
-        }
+        fileStatistics = await this.getFileStatistics(filename)
         if (fileStatistics != undefined) {
             let fileLastModified = fileStatistics.mtimeMs
             this.cache(filename, [value, fileLastModified])
