@@ -106,7 +106,7 @@ export class StoredMapConverter {
         } else {
             filename = Buffer.from(this.stringify(key)).toString('base64url')
             if (isValidKeyValueFile(filename) == false) {
-                throw new Error(this.failedToConvertMessage)
+                throw new Error('Failed to convert a key to a filename.')
             }
         }
         return filename + '.json'
@@ -115,7 +115,7 @@ export class StoredMapConverter {
     /** Convert a filename into a key. */
     public convertFilenameToKey(filename: string) {
         if (isValidKeyValueFile(filename) == false) {
-            throw new Error(this.failedToConvertMessage)
+            throw new Error('Failed to convert a filename to a key.')
         }
         if (filename.includes('.json')) {
             filename = filename.slice(0, filename.indexOf('.json'))
@@ -128,7 +128,5 @@ export class StoredMapConverter {
         }
         return key
     }
-
-    private failedToConvertMessage = 'Failed to convert key to store key.'
 
 }
