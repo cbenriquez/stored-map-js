@@ -60,7 +60,6 @@ The converter can serialize the following objects and special values:
 - undefined
 - BigInt
 - Date
-- StoredMap
 - Map
 - Set
 - Function

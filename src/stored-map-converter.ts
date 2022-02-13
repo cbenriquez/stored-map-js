@@ -10,7 +10,6 @@ import { MapSerializer } from "./serializers/map.js"
 import { NegativeInfinitySerializer } from "./serializers/negative-infinity.js"
 import { NotANumberSerializer } from "./serializers/not-a-number.js"
 import { SetSerializer } from "./serializers/set.js"
-import { StoredMapSerializer } from "./serializers/stored-map.js"
 import { UndefinedSerializer } from "./serializers/undefined.js"
 import { isValidKeyValueFile } from "./key-value-file-validator.js"
 
@@ -31,7 +30,6 @@ export class StoredMapConverter {
         this.serializers['undefined'] = new UndefinedSerializer()
         this.serializers['BigInt'] = new BigIntSerializer()
         this.serializers['Date'] = new DateSerializer()
-        this.serializers['StoredMap'] = new StoredMapSerializer()
         this.serializers['Map'] = new MapSerializer()
         this.serializers['Set'] = new SetSerializer()
         this.serializers['AsyncFunction'] = new AsyncFunctionSerializer()
