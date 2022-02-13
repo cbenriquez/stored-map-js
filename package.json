@@ -1,6 +1,6 @@
 {
   "name": "stored-map",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "An asynchronously iterable map object that holds key-value pairs stored as JSON files on the disk.",
   "keywords": ["store", "map", "datastore", "cache", "key-value"],
   "main": "dist/stored-map.js",

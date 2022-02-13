@@ -156,30 +156,26 @@ export class StoredMap {
     /** Return how many key-value pairs exist. */
     async size() {
         let size = 0;
-        for await (let file of this.keyValueFiles()) {
-            if (file != this.uuidDictionary) {
-                size++;
-            }
+        let iterator = this.keyValueFiles();
+        while ((await iterator.next()).done != true) {
+            size++;
         }
         return size;
     }
     /** Return an iterator for every key. */
     async *keys() {
-        let keyUuidPairs = await this.get('key-uuid-pairs');
-        for await (let file of this.keyValueFiles()) {
-            let isValidUuid = validate(file);
-            if (keyUuidPairs && isValidUuid) {
-                for (let [key, uuid] of Object.entries(keyUuidPairs)) {
-                    if (file == uuid) {
-                        yield key;
+        let uuidDictionary = await this.get(this.uuidDictionary);
+        for await (let filename of this.keyValueFiles()) {
+            let isValidUuid = validate(filename.slice(0, filename.lastIndexOf('.json')));
+            if (uuidDictionary && isValidUuid) {
+                for (let key in uuidDictionary) {
+                    if (uuidDictionary[key] == filename) {
+                        yield key.slice(0, key.lastIndexOf('.json'));
                     }
                 }
             }
             else if (!isValidUuid) {
-                let key = this.converter.convertFilenameToKey(file);
-                if (file != this.uuidDictionary) {
-                    yield key;
-                }
+                yield this.converter.convertFilenameToKey(filename);
             }
         }
     }
@@ -267,7 +263,7 @@ export class StoredMap {
                 if (file.endsWith('.json')) {
                     let statistics = await this.getFileStatistics(file);
                     if (statistics && statistics.isFile()) {
-                        yield file.slice(0, file.indexOf('.json'));
+                        yield file;
                     }
                 }
             }
